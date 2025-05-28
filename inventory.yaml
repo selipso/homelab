@@ -1,0 +1,43 @@
+# Group for all hosts in the infrastructure
+int_swarm:
+  hosts:
+    manager-1:
+      ansible_host: 192.168.1.23
+      ansible_ssh_user: yatit
+    worker-1:
+      ansible_host: 192.168.1.16
+      ansible_ssh_user: yatit
+    manager-2:
+      ansible_host: 192.168.1.24
+      ansible_ssh_user: yatit
+    worker-2:
+      ansible_host: 192.168.1.25
+      ansible_ssh_user: yatit
+    manager-3:
+      ansible_host: 192.168.1.22
+      ansible_ssh_user: yatit
+
+# Group for manager nodes within the swarm
+int_swarm_managers:
+  hosts:
+    # Only include the manager nodes
+    manager-1:
+      ansible_host: 192.168.1.23
+      ansible_ssh_user: yatit
+    manager-2:
+      ansible_host: 192.168.1.24
+      ansible_ssh_user: yatit
+    manager-3:
+      ansible_host: 192.168.1.22
+      ansible_ssh_user: yatit
+
+# Group for worker nodes within the swarm
+int_swarm_workers:
+  hosts:
+    # Only include the worker nodes
+    worker-1:
+      ansible_host: 192.168.1.16
+      ansible_ssh_user: yatit
+    worker-2:
+      ansible_host: 192.168.1.25
+      ansible_ssh_user: yatit

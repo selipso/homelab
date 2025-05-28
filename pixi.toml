@@ -1,0 +1,14 @@
+[workspace]
+authors = ["Yatit Thakker <thakkery@gmail.com>"]
+channels = ["conda-forge"]
+name = "infra"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.13.*"
+
+[pypi-dependencies]
+docker = ">=7.1.0, <8"
