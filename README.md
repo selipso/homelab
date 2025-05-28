@@ -2,6 +2,10 @@
 
 This repository contains Ansible playbooks and configuration for managing a homelab Docker Swarm cluster. The infrastructure is defined as code, allowing for consistent, repeatable deployments and easy maintenance.
 
+## Start Command
+
+`ansible-playbook -i ./inventory.yaml swarm.yml --ask-pass --ask-become-pass`
+
 ## Overview
 
 Our homelab infrastructure uses:
