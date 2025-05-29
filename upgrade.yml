@@ -1,0 +1,15 @@
+- name: Update dependencies and upgrade
+  hosts: int_swarm # Targets the 'int_swarm' group of hosts
+  become: true # Elevates privileges
+  tasks:
+    - name: Update Ubuntu packages
+      block:
+        - name: Update
+          ansible.builtin.apt: # Uses the apt module for package management
+            update_cache: yes # Updates the package cache first
+        - name: Upgrade
+          ansible.builtin.apt:
+            upgrade: yes # Upgrades installed packages
+        - name: Clean up
+          ansible.builtin.apt:
+            autoremove: yes # Removes unused packages
