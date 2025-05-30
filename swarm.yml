@@ -1,17 +1,16 @@
-- name: Install Docker and GlusterFS dependencies
+- name: Install Docker dependencies
   hosts: int_swarm # Targets the 'int_swarm' group of hosts
   become: true # Elevates privileges
   tasks:
-    - name: Install Docker and GlusterFS # Descriptive name for a block of tasks
+    - name: Install Docker # Descriptive name for a block of tasks
       block: # Groups tasks together
-        - name: Install required packages # Installs dependencies for Docker and GlusterFS
+        - name: Install required packages # Installs dependencies for Docker
           ansible.builtin.apt: # Uses the apt module for package management
             name: # Lists packages to be installed
               - ca-certificates
               - curl
               - gnupg
               - software-properties-common
-              - glusterfs-server
             state: present # Ensures packages are installed
             update_cache: true # Updates the package cache first
 
