@@ -1,0 +1,65 @@
+- name: Configure GlusterFS on first manager
+  hosts: int_swarm_managers[0] # Again targets the first manager for GlusterFS configuration
+  become: true
+  tasks:
+    - name: Check if GlusterFS volume staging-gfs exists # Checks for the existence of a GlusterFS volume
+      ansible.builtin.shell: gluster volume info staging-gfs
+      register: volume_info
+      ignore_errors: true
+      changed_when: false
+
+    - name: Probe GlusterFS peers and create volume # Probes peers and creates a GlusterFS volume if not existing
+      block:
+        - name: Probe peers for GlusterFS
+          ansible.builtin.shell: gluster peer probe {{ item }}
+          loop: "{{ groups['int_swarm'] }}"
+          when: volume_info.rc != 0
+          register: peer_probe
+          changed_when: "'peer probe: success' in peer_probe.stdout"
+
+        - name: Create GlusterFS volume
+          ansible.builtin.shell:
+            cmd: >
+              gluster volume create staging-gfs replica {{ groups['int_swarm'] | length }}
+              {% for host in groups['int_swarm'] %}
+              {{ hostvars[host]['ansible_default_ipv4']['address'] }}:/gluster/volume1
+              {% endfor %}
+              force
+          when: volume_info.rc != 0
+          register: volume_create
+          changed_when: "'volume create: success' in volume_create.stdout"
+
+        - name: Start GlusterFS volume
+          ansible.builtin.shell: gluster volume start staging-gfs
+          when: volume_info.rc != 0
+          register: volume_start
+          changed_when: "'volume start: success' in volume_start.stdout"
+
+- name: Mount GlusterFS on all Swarm nodes
+  hosts: int_swarm_managers, int_swarm_workers # Targets both managers and workers for GlusterFS mount
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ensure GlusterFS volume mounts on boot # Configures fstab for the GlusterFS volume
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^localhost:/staging-gfs\s+/mnt\s+glusterfs'
+        line: "localhost:/staging-gfs /mnt glusterfs defaults,_netdev 0 0"
+        create: true
+        mode: "0644"
+
+    - name: Mount GlusterFS volume immediately # Mounts the GlusterFS volume
+      ansible.builtin.mount:
+        path: /mnt
+        src: "localhost:/staging-gfs"
+        fstype: glusterfs
+        opts: defaults,_netdev
+        state: mounted
+
+    - name: Adjust permissions and ownership for GlusterFS mount # Sets proper permissions for the mount
+      ansible.builtin.file:
+        path: /mnt
+        owner: root
+        group: docker
+        state: directory
+        recurse: true
