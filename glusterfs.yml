@@ -1,5 +1,5 @@
-- name: Configure GlusterFS on first manager
-  hosts: int_swarm # Again targets the first manager for GlusterFS configuration
+- name: Configure GlusterFS on all nodes
+  hosts: int_swarm # Targets all nodes for GlusterFS configuration
   become: true
   tasks:
     - name: Start and enable GlusterFS service # Ensures the GlusterFS service is running
@@ -8,76 +8,107 @@
         state: started
         enabled: true
 
-    - name: Ensure GlusterFS brick directories exist # Creates directory for GlusterFS volume
+    - name: Create brick directories for 5 volumes # Creates directories for 5 GlusterFS bricks
       ansible.builtin.file:
-        path: "/gluster/volume1"
+        path: "/gluster/brick{{ item }}"
         state: directory
         mode: "0755"
         owner: root
         group: root
+      loop: [1, 2, 3, 4, 5]
 
-- name: Configure GlusterFS on first manager
-  hosts: int_swarm_managers[0] # Again targets the first manager for GlusterFS configuration
+    - name: Create 30GB files for each brick # Creates 30GB sparse files for brick storage
+      ansible.builtin.command:
+        cmd: "fallocate -l 30G /gluster/brick{{ item }}/brick.img"
+        creates: "/gluster/brick{{ item }}/brick.img"
+      loop: [1, 2, 3, 4, 5]
+
+    - name: Format brick files with ext4 # Formats the brick files with ext4 filesystem
+      ansible.builtin.filesystem:
+        fstype: ext4
+        dev: "/gluster/brick{{ item }}/brick.img"
+      loop: [1, 2, 3, 4, 5]
+
+    - name: Create mount points for bricks # Creates mount points for the brick filesystems
+      ansible.builtin.file:
+        path: "/gluster/mount{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+      loop: [1, 2, 3, 4, 5]
+
+    - name: Mount brick filesystems # Mounts the brick filesystems
+      ansible.builtin.mount:
+        path: "/gluster/mount{{ item }}"
+        src: "/gluster/brick{{ item }}/brick.img"
+        fstype: ext4
+        opts: loop
+        state: mounted
+      loop: [1, 2, 3, 4, 5]
+
+    - name: Create brick data directories # Creates data directories within mounted bricks
+      ansible.builtin.file:
+        path: "/gluster/mount{{ item }}/data"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+      loop: [1, 2, 3, 4, 5]
+
+- name: Create GlusterFS volumes on first manager
+  hosts: int_swarm_managers[0] # Targets the first manager for volume creation
   become: true
   tasks:
-    - name: Check if GlusterFS volume staging-gfs exists # Checks for the existence of a GlusterFS volume
-      ansible.builtin.shell: gluster volume info staging-gfs
-      register: volume_info
-      ignore_errors: true
-      changed_when: false
+    - name: Create 5 GlusterFS volumes with replicas # Creates 5 distributed-replicated volumes
+      gluster.gluster.gluster_volume:
+        name: "swarm-vol{{ item }}"
+        state: present
+        bricks: "{% for host in groups['int_swarm'] %}{{ hostvars[host]['ansible_default_ipv4']['address'] }}:/gluster/mount{{ item }}/data{% if not loop.last %},{% endif %}{% endfor %}"
+        cluster: "{{ groups['int_swarm'] | map('extract', hostvars, 'ansible_default_ipv4') | map(attribute='address') | list }}"
+        replicas: "{{ groups['int_swarm'] | length }}"
+        force: true
+        start_on_create: true
+        rebalance: false
+      loop: [1, 2, 3, 4, 5]
 
-    - name: Probe GlusterFS peers and create volume # Probes peers and creates a GlusterFS volume if not existing
-      block:
-        - name: Probe peers for GlusterFS
-          ansible.builtin.shell: gluster peer probe {{ item }}
-          loop: "{{ groups['int_swarm'] }}"
-          when: volume_info.rc != 0
-          register: peer_probe
-          changed_when: "'peer probe: success' in peer_probe.stdout"
-
-        - name: Create GlusterFS volume
-          ansible.builtin.shell:
-            cmd: >
-              gluster volume create staging-gfs replica {{ groups['int_swarm'] | length }}
-              {% for host in groups['int_swarm'] %}
-              {{ hostvars[host]['ansible_default_ipv4']['address'] }}:/gluster/volume1
-              {% endfor %}
-              force
-          when: volume_info.rc != 0
-          register: volume_create
-          changed_when: "'volume create: success' in volume_create.stdout"
-
-        - name: Start GlusterFS volume
-          ansible.builtin.shell: gluster volume start staging-gfs
-          when: volume_info.rc != 0
-          register: volume_start
-          changed_when: "'volume start: success' in volume_start.stdout"
-
-- name: Mount GlusterFS on all Swarm nodes
+- name: Mount GlusterFS volumes on all Swarm nodes
   hosts: int_swarm_managers, int_swarm_workers # Targets both managers and workers for GlusterFS mount
   become: true
   gather_facts: true
   tasks:
-    - name: Ensure GlusterFS volume mounts on boot # Configures fstab for the GlusterFS volume
+    - name: Create mount points for GlusterFS volumes # Creates mount points for the 5 volumes
+      ansible.builtin.file:
+        path: "/mnt/swarm-vol{{ item }}"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+      loop: [1, 2, 3, 4, 5]
+
+    - name: Ensure GlusterFS volumes mount on boot # Configures fstab for the 5 GlusterFS volumes
       ansible.builtin.lineinfile:
         path: /etc/fstab
-        regexp: '^localhost:/staging-gfs\s+/mnt\s+glusterfs'
-        line: "localhost:/staging-gfs /mnt glusterfs defaults,_netdev 0 0"
+        regexp: '^localhost:/swarm-vol{{ item }}\s+/mnt/swarm-vol{{ item }}\s+glusterfs'
+        line: "localhost:/swarm-vol{{ item }} /mnt/swarm-vol{{ item }} glusterfs defaults,_netdev 0 0"
         create: true
         mode: "0644"
+      loop: [1, 2, 3, 4, 5]
 
-    - name: Mount GlusterFS volume immediately # Mounts the GlusterFS volume
+    - name: Mount GlusterFS volumes immediately # Mounts the 5 GlusterFS volumes
       ansible.builtin.mount:
-        path: /mnt
-        src: "localhost:/staging-gfs"
+        path: "/mnt/swarm-vol{{ item }}"
+        src: "localhost:/swarm-vol{{ item }}"
         fstype: glusterfs
         opts: defaults,_netdev
         state: mounted
+      loop: [1, 2, 3, 4, 5]
 
-    - name: Adjust permissions and ownership for GlusterFS mount # Sets proper permissions for the mount
+    - name: Adjust permissions and ownership for GlusterFS mounts # Sets proper permissions for the mounts
       ansible.builtin.file:
-        path: /mnt
+        path: "/mnt/swarm-vol{{ item }}"
         owner: root
         group: docker
         state: directory
         recurse: true
+      loop: [1, 2, 3, 4, 5]
