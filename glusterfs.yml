@@ -1,4 +1,22 @@
 - name: Configure GlusterFS on first manager
+  hosts: int_swarm # Again targets the first manager for GlusterFS configuration
+  become: true
+  tasks:
+    - name: Start and enable GlusterFS service # Ensures the GlusterFS service is running
+      ansible.builtin.service:
+        name: glusterd
+        state: started
+        enabled: true
+
+    - name: Ensure GlusterFS brick directories exist # Creates directory for GlusterFS volume
+      ansible.builtin.file:
+        path: "/gluster/volume1"
+        state: directory
+        mode: "0755"
+        owner: root
+        group: root
+
+- name: Configure GlusterFS on first manager
   hosts: int_swarm_managers[0] # Again targets the first manager for GlusterFS configuration
   become: true
   tasks:

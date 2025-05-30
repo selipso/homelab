@@ -6,6 +6,8 @@ This repository contains Ansible playbooks and configuration for managing a home
 
 `ansible-playbook -i ./inventory.yaml swarm.yml --ask-pass --ask-become-pass`
 
+Note: you may have to run `ssh-add` to add your SSH key to the agent before running the playbook, especially if you have a passphrase on your key.
+
 ## Overview
 
 Our homelab infrastructure uses:
