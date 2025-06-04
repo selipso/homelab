@@ -1,0 +1,28 @@
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    ports:
+      - 80:80
+      - 443:443
+      - 81:81
+    networks:
+      - proxy
+    volumes:
+      - /mnt/nfs/shared/certs:/etc/letsencrypt
+      - /mnt/nfs/shared/npm:/data
+    configs:
+      - source: npm_hsts
+        target: /app/templates/_hsts.conf
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      replicas: 1
+
+networks:
+  proxy:
+    external: true
+
+configs:
+  npm_hsts:
+    file: ./npm_hosts.txt
