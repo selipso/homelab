@@ -1,0 +1,30 @@
+- name: Mount SMB shares at target folders
+  hosts: int_swarm # Targets the 'int_swarm' group of hosts
+  become: true # Elevates privileges
+  vars_prompt:
+    - name: nas_user
+      prompt: Enter the username to mount the folder as
+    - name: nas_pass
+      prompt: Enter the password for the NAS user
+  tasks:
+    - name: Mount Pictures
+      ansible.posix.mount:
+        src: //192.168.1.2/Pictures
+        path: /mnt/Pictures
+        opts: "rw,vers=3,dom=WORKGROUP,username={{ nas_user }},password={{ nas_pass }}"
+        fstype: cifs
+        state: mounted
+    - name: Mount Media
+      ansible.posix.mount:
+        src: //192.168.1.2/Media
+        path: /mnt/Media
+        opts: "rw,vers=3,dom=WORKGROUP,username={{ nas_user }},password={{ nas_pass }}"
+        fstype: cifs
+        state: mounted
+    - name: Mount Backups
+      ansible.posix.mount:
+        src: //192.168.1.2/Backups
+        path: /mnt/Backups
+        opts: "rw,vers=3,dom=WORKGROUP,username={{ nas_user }},password={{ nas_pass }}"
+        fstype: cifs
+        state: mounted
