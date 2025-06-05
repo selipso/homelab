@@ -1,0 +1,12 @@
+---
+CIFS_PICTURES_PATH: /mnt/Pictures
+CIFS_MEDIA_PATH: /mnt/Media
+CIFS_BACKUP_PATH: /mnt/Backup
+NFS_SHARED_PATH: /mnt/nfs/shared
+NFS_GENERAL_PATH: /mnt/nfs/general
+IMMICH_VERSION: "v1.134.0"
+IMMICH_PORT: 2283
+IMMICH_DATA_LOCATION: /mnt/nfs/shared/immich
+IMMICH_UPLOAD_LOCATION: /mnt/Pictures/immich
+IMMICH_DB_USERNAME: postgres
+IMMICH_DB_DATABASE: immich

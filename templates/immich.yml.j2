@@ -1,0 +1,70 @@
+services:
+  immich-server:
+    image: ghcr.io/immich-app/immich-server:{{ IMMICH_VERSION }}
+    volumes:
+      # Ensure this path is accessible on your Swarm worker nodes
+      - {{ IMMICH_UPLOAD_LOCATION }}:/usr/src/app/upload
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - '{{ IMMICH_PORT }}:2283'
+    depends_on:
+      # In Swarm, depends_on is primarily for startup order, not readiness.
+      # Healthchecks are crucial for Swarm service readiness.
+      - redis
+      - database
+    deploy:
+      replicas: 1 # Default for Swarm, can be made a variable if needed
+      restart_policy:
+        condition: on-failure
+    networks:
+      - proxy # immich-server is on the proxy network
+      - immich
+
+  immich-machine-learning:
+    image: ghcr.io/immich-app/immich-machine-learning:{{ IMMICH_VERSION }}
+    volumes:
+      - model-cache:/cache
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - immich
+
+  redis:
+    image: docker.io/valkey/valkey:8-bookworm@sha256:ff21bc0f8194dc9c105b769aeabf9585fea6a8ed649c0781caeac5cb3c247884
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - immich
+
+  database:
+    image: ghcr.io/immich-app/postgres:14-vectorchord0.3.0-pgvectors0.2.0@sha256:fa4f6e0971f454cd95fec5a9aaed2ed93d8f46725cc6bc61e0698e97dba96da1
+    environment:
+      # These are directly injected from Ansible variables (DB_PASSWORD is vaulted)
+      POSTGRES_PASSWORD: "{{ DB_PASSWORD }}"
+      POSTGRES_USER: "{{ IMMICH_DB_USERNAME }}"
+      POSTGRES_DB: "{{ IMMICH_DB_DATABASE }}"
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      # DB_STORAGE_TYPE: 'HDD' # Uncomment if your database isn't stored on SSDs, can be a variable
+    volumes:
+      # Ensure this path is accessible on your Swarm worker nodes
+      - {{ IMMICH_DATA_LOCATION }}:/var/lib/postgresql/data
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - immich
+
+volumes:
+  model-cache:
+    # This will be a Swarm-managed named volume.
+
+networks:
+  proxy:
+    external: true # Ansible will ensure this network exists
+  immich:
+    external: true # Ansible will ensure this network exists
