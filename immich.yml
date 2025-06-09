@@ -20,9 +20,6 @@
     - name: Include encrypted variables
       ansible.builtin.include_vars:
         file: group_vars/secrets.yml
-        name: DB_PASSWORD
-
-    # PIPX AND JSONDIFF WTF WHY NOT JUST USE PIXI
 
     # Begin configuring the Immich stack
     - name: Create temporary directory for compose stack
