@@ -1,0 +1,18 @@
+services:
+  search:
+    image: getmeili/meilisearch:latest
+    container_name: search
+    ports:
+      - "7700:7700"
+    volumes:
+      - /mnt/nfs/shared/search:/data
+    networks:
+      - proxy
+      - search
+    environment:
+      - MEILI_MASTER_KEY={{ MEILI_MASTER_KEY }}
+networks:
+  proxy:
+    external: true # Ansible will ensure this network exists
+  search:
+    external: true # Ansible will ensure this network exists

@@ -1,0 +1,9 @@
+services:
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    volumes:
+      - ./meili_data:/data
+    environment:
+      MEILI_MASTER_KEY: your_master_key # Replace with your desired master key
