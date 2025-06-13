@@ -21,6 +21,29 @@
       ansible.builtin.include_vars:
         file: group_vars/secrets.yml
 
+    # Create pgAdmin directories
+    - name: Create pgAdmin directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "5050"
+        group: "5050"
+        mode: "0755"
+      become: true
+      loop:
+        - /mnt/nfs/shared/pgadmin
+        - /mnt/nfs/shared/config/pgadmin
+
+    # Create servers.json from template
+    - name: Create servers.json from template
+      ansible.builtin.template:
+        src: templates/pgadmin-servers.json.j2
+        dest: /mnt/nfs/shared/config/pgadmin/servers.json
+        owner: "5050"
+        group: "5050"
+        mode: "0644"
+      become: true
+
     # Begin configuring the pgAdmin stack
     - name: Create temporary directory for compose stack
       ansible.builtin.tempfile:
