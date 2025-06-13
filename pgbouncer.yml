@@ -1,0 +1,69 @@
+---
+- name: Deploy PGBouncer stack to Docker Swarm
+  hosts: int_swarm_managers[0]
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Include encrypted variables
+      ansible.builtin.include_vars:
+        file: group_vars/secrets.yml
+      no_log: true
+
+    - name: Ensure 'postgres' network exists
+      community.docker.docker_network:
+        name: postgres
+        driver: overlay
+        attachable: true
+        state: present
+
+    - name: Ensure 'backend' network exists
+      community.docker.docker_network:
+        name: backend
+        driver: overlay
+        attachable: true
+        state: present
+
+    - name: Create PostgreSQL directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - /mnt/nfs/shared/db/data
+        - /mnt/nfs/shared/db/config
+
+    - name: Generate PGBouncer config
+      ansible.builtin.template:
+        src: templates/pgbouncer.ini.j2
+        dest: "/mnt/nfs/shared/db/config/pgbouncer.ini"
+        mode: "0644"
+      no_log: true
+
+    - name: Generate PGBouncer userlist
+      ansible.builtin.template:
+        src: templates/userlist.txt.j2
+        dest: "/mnt/nfs/shared/db/config/userlist.txt"
+        mode: "0644"
+      no_log: true
+
+    - name: Create temp directory for compose
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: _pgbouncer
+      register: temp_dir
+
+    - name: Render compose file
+      ansible.builtin.template:
+        src: templates/pgbouncer-stack.yml.j2
+        dest: "{{ temp_dir.path }}/pgbouncer-stack.yml"
+
+    - name: Deploy PGBouncer stack
+      community.docker.docker_stack:
+        state: present
+        name: pgbouncer
+        compose: "{{ temp_dir.path }}/pgbouncer-stack.yml"
+
+    - name: Clean up temp directory
+      ansible.builtin.file:
+        path: "{{ temp_dir.path }}"
+        state: absent

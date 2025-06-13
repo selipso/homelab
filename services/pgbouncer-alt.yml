@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:17.5-bookworm
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: "myuser"
+      POSTGRES_PASSWORD: "mypass"
+      POSTGRES_DB: "mydb"
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+
+  pgbouncer:
+    image: edoburu/pgbouncer
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "6432:6432"
+    environment:
+      DB_USER: "myuser"
+      DB_PASSWORD: "mypass"
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
