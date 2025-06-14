@@ -2,13 +2,13 @@
 ;; {{ ansible_managed }}
 
 [databases]
-{{ POSTGRES_DB }} = host=db port=5432 dbname={{ POSTGRES_DB }} auth_user=app_user
+{{ POSTGRES_DB }} = host=db port=5432 dbname={{ POSTGRES_DB }}
 
 [pgbouncer]
 listen_addr = 0.0.0.0
 listen_port = 6432
-auth_type = md5
-auth_file = /etc/pgbouncer/userlist.txt
+auth_type = scram-sha-256
+auth_query = SELECT usename, passwd FROM pg_shadow WHERE usename=$1
 pool_mode = transaction
 max_client_conn = 100
 default_pool_size = 20

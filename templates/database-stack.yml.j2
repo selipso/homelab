@@ -1,5 +1,5 @@
 services:
-  db:
+  postgres:
     image: postgres:17-bookworm
     volumes:
       - /mnt/nfs/shared/db/data:/var/lib/postgresql/data
@@ -20,17 +20,21 @@ services:
       restart_policy:
         condition: on-failure
     networks:
-      - postgres
+      - db
 
   pgbouncer:
     image: edoburu/pgbouncer:latest
+    hostname: db
     ports:
       - "6432:6432"
     environment:
       DB_USER: {{ POSTGRES_USER }}
       DB_PASSWORD: {{ POSTGRES_PASSWORD }}
-      DB_HOST: db
+      DB_HOST: postgres
       DB_NAME: {{ POSTGRES_DB }}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      ADMIN_USERS: {{ POSTGRES_USER }}
     volumes:
       - /mnt/nfs/shared/db/config/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
     healthcheck:
@@ -45,11 +49,42 @@ services:
       restart_policy:
         condition: on-failure
     networks:
+      - db
       - postgres
-      - backend
+    depends_on:
+      - postgres
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: {{ PGADMIN_DEFAULT_EMAIL }}
+      PGADMIN_DEFAULT_PASSWORD: {{ PGADMIN_DEFAULT_PASSWORD }}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - /mnt/nfs/shared/pgadmin:/var/lib/pgadmin
+      - /mnt/nfs/shared/db/config/servers.json:/pgadmin4/servers.json:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80/misc/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - proxy
+      - postgres
+    depends_on:
+      - pgbouncer
 
 networks:
+  db:
+    external: true
   postgres:
     external: true
-  backend:
+  proxy:
     external: true
