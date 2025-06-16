@@ -11,6 +11,11 @@ services:
       - search
     environment:
       - MEILI_MASTER_KEY={{ MEILI_MASTER_KEY }}
+    replicas: 1
+      placement:
+        constraints: [node.platform.arch == x86_64]
+      restart_policy:
+        condition: on-failure
 networks:
   proxy:
     external: true # Ansible will ensure this network exists

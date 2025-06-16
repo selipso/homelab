@@ -1,14 +1,10 @@
 ;; PGBouncer configuration file
 ;; {{ ansible_managed }}
 
-[databases]
-{{ POSTGRES_DB }} = host=db port=5432 dbname={{ POSTGRES_DB }}
-
 [pgbouncer]
 listen_addr = 0.0.0.0
 listen_port = 6432
 auth_type = scram-sha-256
-auth_query = SELECT usename, passwd FROM pg_shadow WHERE usename=$1
 pool_mode = transaction
 max_client_conn = 100
 default_pool_size = 20
@@ -16,5 +12,5 @@ server_lifetime = 3600
 server_idle_timeout = 600
 log_connections = 1
 log_disconnections = 1
-admin_users = {{ POSTGRES_USER }}
-stats_users = {{ POSTGRES_USER }}
+admin_users = postgres
+stats_users = postgres

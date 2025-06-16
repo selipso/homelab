@@ -12,6 +12,9 @@ Note: Run `ssh-add` if using SSH keys with passphrases.
 
 ### Deploy Service Stacks
 ```bash
+# Deploy Database Stack (PostgreSQL, PGBouncer, pgAdmin)
+ansible-playbook -i ./inventory.yaml database.yml --ask-pass --ask-become-pass
+
 # Deploy Immich (photo management)
 ansible-playbook -i ./inventory.yaml immich.yml --ask-pass --ask-become-pass
 
@@ -56,3 +59,41 @@ This homelab uses Infrastructure as Code with Ansible to manage a Docker Swarm c
 - `proxy` network: Shared overlay network for services behind reverse proxy
 - Service-specific networks: Isolated overlay networks per service stack
 - All networks are created as attachable overlay networks before stack deployment
+
+## Database Stack Architecture
+
+The database stack provides a unified PostgreSQL database with connection pooling and management interface:
+
+### Components
+- **PostgreSQL 17**: Primary database server (only accessible via PGBouncer)
+- **PGBouncer**: Connection pooler with SCRAM-SHA-256 authentication
+- **pgAdmin**: Web-based database management interface
+
+### Network Topology
+- `db` network: Internal network for PostgreSQL ↔ PGBouncer communication
+- `postgres` network: Application connection network (PGBouncer ↔ services)
+- `proxy` network: pgAdmin web interface access
+
+### Connecting Applications
+When deploying server-side applications that need database access:
+1. Add the service to the `postgres` network
+2. Connect to hostname `db` on port `6432` (this routes through PGBouncer)
+3. Use the credentials from `group_vars/secrets.yml`
+
+Example service configuration:
+```yaml
+services:
+  myapp:
+    image: myapp:latest
+    environment:
+      DATABASE_URL: postgresql://{{ POSTGRES_USER }}:{{ POSTGRES_PASSWORD }}@db:6432/{{ POSTGRES_DB }}
+    networks:
+      - postgres
+      - proxy  # if web-accessible
+
+networks:
+  postgres:
+    external: true
+  proxy:
+    external: true
+```

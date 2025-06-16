@@ -27,14 +27,6 @@ services:
     hostname: db
     ports:
       - "6432:6432"
-    environment:
-      DB_USER: {{ POSTGRES_USER }}
-      DB_PASSWORD: {{ POSTGRES_PASSWORD }}
-      DB_HOST: postgres
-      DB_NAME: {{ POSTGRES_DB }}
-      AUTH_TYPE: scram-sha-256
-      POOL_MODE: transaction
-      ADMIN_USERS: {{ POSTGRES_USER }}
     volumes:
       - /mnt/nfs/shared/db/config/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
     healthcheck:
@@ -73,6 +65,8 @@ services:
       retries: 3
     deploy:
       replicas: 1
+      placement:
+        constraints: [node.platform.arch == x86_64]
       restart_policy:
         condition: on-failure
     networks:

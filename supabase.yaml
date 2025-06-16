@@ -1,0 +1,97 @@
+- name: Deploy Supabase stack to Docker Swarm
+  hosts: int_swarm_managers[0]
+  gather_facts: false
+  become: true
+  vars:
+    # Sane defaults for environment variables (override via vars_files or extra_vars)
+    STUDIO_DEFAULT_ORGANIZATION: "Kapisce"
+    STUDIO_DEFAULT_PROJECT: "Alexandria"
+    SUPABASE_PUBLIC_URL: "https://based.kapisce.com"
+    KONG_HTTP_PORT: 8000
+    KONG_HTTPS_PORT: 8443
+    DASHBOARD_USERNAME: "ythakker"
+    API_EXTERNAL_URL: "https://api.kapisce.com"
+    POSTGRES_HOST: "db"
+    POSTGRES_PORT: 5432
+    POSTGRES_DB: "supabase"
+    SITE_URL: "https://services.kapisce.com"
+    ADDITIONAL_REDIRECT_URLS: ""
+    DISABLE_SIGNUP: 0
+    JWT_EXPIRY: 3600
+    ENABLE_EMAIL_SIGNUP: 1
+    ENABLE_ANONYMOUS_USERS: 1
+    ENABLE_EMAIL_AUTOCONFIRM: 0
+    SMTP_ADMIN_EMAIL: "noreply@nowispow.com"
+    SMTP_SENDER_NAME: "Homelab Support"
+    MAILER_URLPATHS_INVITE: "/auth/v1/verify"
+    MAILER_URLPATHS_CONFIRMATION: "/auth/v1/verify"
+    MAILER_URLPATHS_RECOVERY: "/auth/v1/verify"
+    MAILER_URLPATHS_EMAIL_CHANGE: "/auth/v1/verify"
+    ENABLE_PHONE_SIGNUP: 1
+    ENABLE_PHONE_AUTOCONFIRM: 1
+    PGRST_DB_SCHEMAS: "public,storage,graphql_public"
+    IMGPROXY_ENABLE_WEBP_DETECTION: 1
+    FUNCTIONS_VERIFY_JWT: 0
+    DOCKER_SOCKET_LOCATION: "/var/run/docker.sock"
+    POOLER_PROXY_PORT_TRANSACTION: 6543
+    POOLER_TENANT_ID: "homelab"
+    POOLER_DEFAULT_POOL_SIZE: 20
+    POOLER_MAX_CLIENT_CONN: 100
+    POOLER_POOL_MODE: "transaction"
+  tasks:
+    - name: Ensure 'proxy' network exists and attachable
+      community.docker.docker_network:
+        name: proxy
+        driver: overlay
+        attachable: true
+        state: present
+    - name: Ensure 'supabase-net' network exists and attachable
+      community.docker.docker_network:
+        name: supabase-net
+        driver: overlay
+        attachable: true
+        state: present
+    # Encrypted vars
+    - name: Include encrypted variables
+      ansible.builtin.include_vars:
+        file: group_vars/secrets.yml
+
+    # Begin configuring the supabase stack
+    - name: Create temporary directory for compose stack
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: _compose
+      register: temp_dir_result
+
+    - name: Render and copy compose file as a stack to temp dir on manager
+      ansible.builtin.template:
+        src: templates/supadata.yml.j2
+        dest: "{{ temp_dir_result.path }}/supadata.yml"
+    - name: Deploy Foundational Supadata stack to Docker Swarm
+      community.docker.docker_stack:
+        state: present
+        name: supadata
+        compose: "{{ temp_dir_result.path }}/supadata.yml"
+      register: stack_deploy_result
+
+    - name: Render and copy services compose file to the temp dir on manager
+      ansible.builtin.template:
+        src: templates/supaservices.yml.j2
+        dest: "{{ temp_dir_result.path }}/supaservices.yml"
+    - name: Deploy Supabase Services stack to Docker Swarm
+      community.docker.docker_stack:
+        state: present
+        name: supaservices
+        compose: "{{ temp_dir_result.path }}/supaservices.yml"
+      register: stack_deploy_result
+
+    - name: Render and copy storage compose file to the temp dir on manager
+      ansible.builtin.template:
+        src: templates/supastorage.yml.j2
+        dest: "{{ temp_dir_result.path }}/supastorage.yml"
+    - name: Deploy Supabase Storage stack to Docker Swarm
+      community.docker.docker_stack:
+        state: present
+        name: supastorage
+        compose: "{{ temp_dir_result.path }}/supastorage.yml"
+      register: stack_deploy_result

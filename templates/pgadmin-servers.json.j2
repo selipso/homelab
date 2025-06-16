@@ -3,10 +3,10 @@
         "1": {
             "Name": "PgBouncer Pool",
             "Group": "Servers",
-            "Host": "pgbouncer",
+            "Host": "db",
             "Port": 6432,
-            "MaintenanceDB": "{{ POSTGRES_DB }}",
-            "Username": "{{ POSTGRES_USER }}",
+            "MaintenanceDB": "postgres",
+            "Username": "postgres",
             "SSLMode": "prefer",
             "Comment": "Connection via PgBouncer"
         }
