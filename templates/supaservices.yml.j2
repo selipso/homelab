@@ -76,7 +76,7 @@ services:
 
   auth:
     hostname: auth
-    image: supabase/gotrue:v2.174.0
+    image: supabase/gotrue:v2.176.1
     deploy:
       replicas: 1
       restart_policy:
@@ -149,9 +149,8 @@ services:
       PGRST_APP_SETTINGS_JWT_EXP: {{ JWT_EXPIRY }}
     command: ["postgrest"]
 
-  realtime:
-    hostname: realtime
-    image: supabase/realtime:v2.34.47
+  realtime-dev:
+    image: supabase/realtime:v2.37.1
     deploy:
       restart_policy:
         condition: on-failure
@@ -167,7 +166,7 @@ services:
         - /dev/null
         - -H
         - "Authorization: Bearer {{ ANON_KEY }}"
-        - "http://0.0.0.0:4000/api/tenants/realtime-dev/health"
+        - "http://127.0.0.1:4000/api/tenants/realtime-dev/health"
       timeout: 5s
       interval: 5s
       retries: 3
@@ -186,7 +185,7 @@ services:
       API_JWT_SECRET: {{ JWT_SECRET }}
       SECRET_KEY_BASE: {{ SECRET_KEY_BASE }}
       ERL_AFLAGS: "-proto_dist inet_tcp"
-      DNS_NODES: "'realtime'"
+      DNS_NODES: "'realtime-dev'"
       RLIMIT_NOFILE: "10000"
       APP_NAME: realtime
       SEED_SELF_HOST: "true"

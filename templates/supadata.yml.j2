@@ -6,19 +6,22 @@ volumes:
 services:
   analytics:
     hostname: analytics
-    image: supabase/logflare:1.14.2
+    image: supabase/logflare:1.15.3
     deploy:
       restart_policy:
         condition: on-failure
     networks:
       - supabase-net
     ports:
-      - 4000:4000
+      - target: 4000
+        published: 4000
+        protocol: tcp
+        mode: host
     healthcheck:
       test:
         - CMD
         - curl
-        - http://localhost:4000/health
+        - http://127.0.0.1:4000/health
       timeout: 5s
       interval: 5s
       retries: 10
