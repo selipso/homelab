@@ -1,0 +1,40 @@
+---
+- name: Deploy Search stack to Docker Swarm
+  hosts: int_swarm_managers[0]
+  gather_facts: false
+  tasks:
+    # Set up networks for attaching services
+    - name: Ensure 'proxy' network exists and attachable
+      community.docker.docker_network:
+        name: proxy
+        driver: overlay
+        attachable: true
+        state: present
+    # Encrypted vars
+    - name: Include encrypted variables
+      ansible.builtin.include_vars:
+        file: group_vars/secrets.yml
+
+    # Begin configuring the Terraria stack
+    - name: Create temporary directory for compose stack
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: _compose
+      register: temp_dir_result
+    - name: Render and copy compose file as a stack to temp dir on manager
+      ansible.builtin.template:
+        src: templates/tmodloader.yml.j2
+        dest: "{{ temp_dir_result.path }}/tmodloader.yml"
+
+    - name: Deploy Terraria stack to Docker Swarm
+      community.docker.docker_stack:
+        state: present
+        name: terraria
+        compose: "{{ temp_dir_result.path }}/tmodloader.yml"
+      register: stack_deploy_result
+
+    - name: Clean up temporary directory
+      ansible.builtin.file:
+        path: "{{ temp_dir_result.path }}"
+        state: absent
+      when: stack_deploy_result is succeeded

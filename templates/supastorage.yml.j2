@@ -26,8 +26,6 @@ services:
       - imgproxy
     deploy:
       replicas: 1
-      restart_policy:
-        condition: on-failure
     environment:
       ANON_KEY: {{ ANON_KEY }}
       SERVICE_KEY: {{ SERVICE_ROLE_KEY }}
@@ -63,8 +61,6 @@ services:
       retries: 3
     deploy:
       replicas: 1
-      restart_policy:
-        condition: on-failure
     environment:
       IMGPROXY_BIND: ":5001"
       IMGPROXY_LOCAL_FILESYSTEM_ROOT: /

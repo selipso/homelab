@@ -8,8 +8,7 @@ services:
     hostname: analytics
     image: supabase/logflare:1.15.3
     deploy:
-      restart_policy:
-        condition: on-failure
+      replicas: 1
     networks:
       - supabase-net
     ports:
@@ -74,10 +73,6 @@ services:
       - vector
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.platform.arch == x86_64]
-      restart_policy:
-        condition: on-failure
       endpoint_mode: dnsrr
     environment:
       POSTGRES_HOST: /var/run/postgresql
@@ -117,10 +112,6 @@ services:
       retries: 3
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.platform.arch == x86_64]
-      restart_policy:
-        condition: on-failure
     environment:
       LOGFLARE_PUBLIC_ACCESS_TOKEN: {{ LOGFLARE_PUBLIC_ACCESS_TOKEN }}
     command:
@@ -155,10 +146,6 @@ services:
       - analytics
     deploy:
       replicas: 1
-      placement:
-        constraints: [node.platform.arch == x86_64]
-      restart_policy:
-        condition: on-failure
     environment:
       PORT: 4000
       POSTGRES_PORT: {{ POSTGRES_PORT }}

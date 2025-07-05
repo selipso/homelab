@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    container_name: calibre-web
+    environment:
+      - PUID=1000 # Replace with your user ID
+      - PGID=1000 # Replace with your group ID
+      - TZ=America/Chicago # Replace with your timezone
+    volumes:
+      - /path/to/calibre/library:/config # Path to your Calibre library
+      - /path/to/calibre/books:/books # Path where your actual book files are stored
+    ports:
+      - 8083:8083 # Host_Port:Container_Port
+    restart: unless-stopped
+
+  lazylibrarian:
+    image: linuxserver/lazylibrarian:latest
+    container_name: lazylibrarian
+    environment:
+      - PUID=1000 # Replace with your user ID
+      - PGID=1000 # Replace with your group ID
+      - TZ=America/Chicago # Replace with your timezone
+    volumes:
+      - /path/to/lazylibrarian/config:/config # Path for LazyLibrarian configuration
+      - /path/to/downloads:/downloads # Path for downloaded books
+      - /path/to/calibre/books:/books # Mount the same book directory for LazyLibrarian to place books
+    ports:
+      - 5299:5299 # Host_Port:Container_Port
+    restart: unless-stopped
