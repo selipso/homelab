@@ -1,0 +1,30 @@
+version: "3.8"
+
+services:
+  minio:
+    image: minio/minio:latest
+    command: server /data{1...4}
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    networks:
+      - minio-overlay
+    deploy:
+      replicas: 4 # Example: Deploy 4 MinIO instances
+      placement:
+        constraints:
+          - node.role == worker # Or manager, depending on your setup
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  minio_data:
+
+networks:
+  minio-overlay:
+    external: true
