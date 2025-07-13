@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  affine:
+    image: ghcr.io/toeverything/affine:{{ AFFINE_REVISION | default('stable') }}
+    ports:
+      - '3010:3010'
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+      - affine_migration
+    volumes:
+      - /mnt/nfs/shared/affine/storage:/root/.affine/storage
+      - /mnt/nfs/shared/affine/config:/root/.affine/config
+    environment:
+      - REDIS_SERVER_HOST=redis
+      - DATABASE_URL=postgresql://{{ AFFINE_DB_USERNAME }}:{{ AFFINE_DB_PASSWORD }}@postgres:5432/affine
+      - AFFINE_INDEXER_ENABLED=false
+    networks:
+      - affine
+      - proxy
+
+  affine_migration:
+    image: ghcr.io/toeverything/affine:{{ AFFINE_REVISION | default('stable') }}
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: none
+    volumes:
+      - /mnt/nfs/shared/affine/storage:/root/.affine/storage
+      - /mnt/nfs/shared/affine/config:/root/.affine/config
+    command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
+    environment:
+      - REDIS_SERVER_HOST=redis
+      - DATABASE_URL=postgresql://{{ AFFINE_DB_USERNAME }}:{{ AFFINE_DB_PASSWORD }}@postgres:5432/affine
+      - AFFINE_INDEXER_ENABLED=false
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - affine
+
+  redis:
+    image: redis
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - affine
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: unless-stopped
+    volumes:
+      - /mnt/nfs/shared/affine/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: {{ AFFINE_DB_USERNAME }}
+      POSTGRES_PASSWORD: {{ AFFINE_DB_PASSWORD }}
+      POSTGRES_DB: 'affine'
+      POSTGRES_INITDB_ARGS: '--data-checksums'
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', '{{ AFFINE_DB_USERNAME }}', '-d', 'affine']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - affine
+
+networks:
+  affine:
+    driver: overlay
+    attachable: true
+  proxy:
+    external: true
