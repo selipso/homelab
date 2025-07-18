@@ -1,30 +1,121 @@
-version: "3.8"
-
 services:
   minio:
-    image: minio/minio:latest
-    command: server /data{1...4}
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    volumes:
-      - minio_data:/data
+    image: minio/minio@sha256:ac591851803a79aee64bc37f66d77c56b0a4b6e12d9e5356380f4105510f2332
+    command: server --console-address ":9001" /data{1...4}
+    hostname: minio
     networks:
-      - minio-overlay
-    deploy:
-      replicas: 4 # Example: Deploy 4 MinIO instances
-      placement:
-        constraints:
-          - node.role == worker # Or manager, depending on your setup
+      - proxy
+      - minio-net
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - /Volumes/data1:/data1
+      - /Volumes/data2:/data2
+      - /Volumes/data3:/data3
+      - /Volumes/data4:/data4
+    # environment:
+    # MINIO_ROOT_USER: 'your-access-key'
+    # MINIO_ROOT_PASSWORD: 'your-secret-key'
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
-
-volumes:
-  minio_data:
-
+      interval: 5s
+      timeout: 5s
+      retries: 5
 networks:
-  minio-overlay:
+  proxy:
     external: true
+  minio-net:
+    external: true
+# # Few notes below:
+# # Use template variables and multiple minio instances to enable high availability. Currently, docker swarm round robin load balancing is used.
+# # Swarm mode round robin interferes with bucket replication and sync.
+# # For consistency, use bitnami/minio:2024.10.29 image and enable node replication with multiple hosts
+# x-minio-common: &minio-common
+#   image: quay.io/minio/minio:RELEASE.2022-12-12T19-27-27Z
+#   command: server --console-address ":9001" http://minio{1...4}/data{1...2}
+#   expose:
+#     - "9000"
+#     - "9001"
+#   # environment:
+#     # MINIO_ROOT_USER: 'your-access-key'
+#     # MINIO_ROOT_PASSWORD: 'your-secret-key'
+#   healthcheck:
+#     test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+#     interval: 30s
+#     timeout: 20s
+#     retries: 3
+
+# # starts 4 docker containers running minio server instances.
+# # using nginx reverse proxy, load balancing, you can access
+# # it through port 9000.
+# services:
+#   minio1:
+#     <<: *minio-common
+#     hostname: minio1
+#     volumes:
+#       - data1-1:/data1
+#       - data1-2:/data2
+
+#   minio2:
+#     <<: *minio-common
+#     hostname: minio2
+#     volumes:
+#       - data2-1:/data1
+#       - data2-2:/data2
+
+#   minio3:
+#     <<: *minio-common
+#     hostname: minio3
+#     volumes:
+#       - data3-1:/data1
+#       - data3-2:/data2
+
+#   minio4:
+#     <<: *minio-common
+#     hostname: minio4
+#     volumes:
+#       - data4-1:/data1
+#       - data4-2:/data2
+#
+# Example with Bitnami image
+#
+# minio:
+#   image: docker.io/bitnami/minio:2024
+#   ports:
+#     - 9000:9000
+#     - 9001:9001
+#   volumes:
+#     - 'minio_data:/bitnami/minio/data'
+#   environment:
+#     - MINIO_ROOT_USER=minio
+#     - MINIO_ROOT_PASSWORD=miniosecret
+#     - MINIO_DISTRIBUTED_MODE_ENABLED=yes
+#     - MINIO_DISTRIBUTED_NODES=minio,minio2,minio3,minio4
+# minio2:
+#   image: docker.io/bitnami/minio:2024
+#   volumes:
+#     - 'minio_2_data:/bitnami/minio/data'
+#   environment:
+#     - MINIO_ROOT_USER=minio
+#     - MINIO_ROOT_PASSWORD=miniosecret
+#     - MINIO_DISTRIBUTED_MODE_ENABLED=yes
+#     - MINIO_DISTRIBUTED_NODES=minio,minio2,minio3,minio4
+# minio3:
+#   image: docker.io/bitnami/minio:2024
+#   volumes:
+#     - 'minio_3_data:/bitnami/minio/data'
+#   environment:
+#     - MINIO_ROOT_USER=minio
+#     - MINIO_ROOT_PASSWORD=miniosecret
+#     - MINIO_DISTRIBUTED_MODE_ENABLED=yes
+#     - MINIO_DISTRIBUTED_NODES=minio,minio2,minio3,minio4
+# minio4:
+#   image: docker.io/bitnami/minio:2024
+#   volumes:
+#     - 'minio_4_data:/bitnami/minio/data'
+#   environment:
+#     - MINIO_ROOT_USER=minio
+#     - MINIO_ROOT_PASSWORD=miniosecret
+#     - MINIO_DISTRIBUTED_MODE_ENABLED=yes
+#     - MINIO_DISTRIBUTED_NODES=minio,minio2,minio3,minio4

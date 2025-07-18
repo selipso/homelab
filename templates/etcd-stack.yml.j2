@@ -1,0 +1,109 @@
+x-etcd-common: &etcd-common
+  image: bitnami/etcd:latest
+  user: 1001:0
+  volumes:
+    - /mnt/nfs/shared/etcd/data:/bitnami/etcd/data
+  networks:
+    - proxy
+    - etcd-net
+  environment:
+    ETCD_ROOT_PASSWORD: {{ ETCD_ROOT_PASSWORD }}
+    ALLOW_NONE_AUTHENTICATION: "yes"
+    ETCD_ADVERTISE_CLIENT_URLS: http://0.0.0.0:2379
+    ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+    ETCD_INITIAL_CLUSTER_STATE: new
+    ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380,etcd4=http://etcd4:2380,etcd5=http://etcd5:2380
+    BITNAMI_DEBUG: "yes"
+  healthcheck:
+    test: ["CMD", "/opt/bitnami/scripts/etcd/healthcheck.sh"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+
+services:
+  etcd1:
+    <<: *etcd-common
+    hostname: etcd1
+    environment:
+      <<: *etcd-common.environment
+      ETCD_NAME: etcd1
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd1:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkone
+
+  etcd2:
+    <<: *etcd-common
+    hostname: etcd2
+    environment:
+      <<: *etcd-common.environment
+      ETCD_NAME: etcd2
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd2:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    ports:
+      - "2479:2379"
+      - "2480:2380"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinktwo
+
+  etcd3:
+    <<: *etcd-common
+    hostname: etcd3
+    environment:
+      <<: *etcd-common.environment
+      ETCD_NAME: etcd3
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd3:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkthree
+
+  etcd4:
+    <<: *etcd-common
+    hostname: etcd4
+    environment:
+      <<: *etcd-common.environment
+      ETCD_NAME: etcd4
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd4:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkfour
+
+  etcd5:
+    <<: *etcd-common
+    hostname: etcd5
+    environment:
+      <<: *etcd-common.environment
+      ETCD_NAME: etcd5
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd5:2380
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == minix
+
+networks:
+  proxy:
+    external: true
+  etcd-net:
+    external: true

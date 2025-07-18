@@ -1,0 +1,72 @@
+x-minio-common: &minio-common
+  image: bitnami/minio:2024.10.29
+  user: 1001:0
+  volumes:
+    - /Volumes/tb:/bitnami/minio/data
+  networks:
+    - proxy
+    - minio-net
+  environment:
+    MINIO_ROOT_USER: {{ MINIO_ACCESS_KEY }}
+    MINIO_ROOT_PASSWORD: {{ MINIO_SECRET_KEY }}
+    MINIO_DISTRIBUTED_MODE_ENABLED: yes
+    MINIO_DISTRIBUTED_NODES: minio1,minio2,minio3,minio4
+    BITNAMI_DEBUG: yes
+  healthcheck:
+    test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+
+services:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkone
+
+  minio2:
+    <<: *minio-common
+    hostname: minio2
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinktwo
+
+  minio3:
+    <<: *minio-common
+    hostname: minio3
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkthree
+
+  minio4:
+    <<: *minio-common
+    hostname: minio4
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.hostname == thinkfour
+
+networks:
+  proxy:
+    external: true
+  minio-net:
+    external: true
