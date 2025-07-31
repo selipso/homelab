@@ -1,0 +1,34 @@
+---
+# Playbook for installing Lima on macOS computers
+- name: Install Lima on macOS systems
+  hosts: mac_computers
+  become: false  # Homebrew should not be run with sudo
+
+  tasks:
+    - name: Ensure Homebrew is installed
+      block:
+        - name: try using homebrew in check_mode (no changes)
+          homebrew:
+            update_homebrew: true
+          check_mode: true
+
+        - name: Homebrew available
+          debug:
+            msg: Homebrew is installed
+
+      rescue:
+        - name: No homebrew
+          debug:
+            msg: Homebrew is not installed
+
+    - name: Install Lima package
+      community.general.homebrew:
+        name: lima
+        state: present
+        update_homebrew: true
+      register: lima_install
+      
+    - name: Display installation result
+      ansible.builtin.debug:
+        msg: "Lima has been installed successfully"
+      when: lima_install is changed
