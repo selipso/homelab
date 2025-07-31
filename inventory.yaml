@@ -41,3 +41,23 @@ int_swarm_workers:
     worker-2:
       ansible_host: 192.168.1.25
       ansible_ssh_user: yatit
+
+# Group for mac computers
+mac_computers:
+  hosts:
+    # Only include the mac computers
+    minione:
+      ansible_host: 192.168.1.42
+      ansible_ssh_user: yatit
+    miniond:
+      ansible_host: 192.168.1.45
+      ansible_ssh_user: yatit
+    minionc:
+      ansible_host: 192.168.1.47
+      ansible_ssh_user: yatit
+    minionb:
+      ansible_host: 192.168.1.48
+      ansible_ssh_user: yatit
+    miniona:
+      ansible_host: 192.168.1.49
+      ansible_ssh_user: yatit
