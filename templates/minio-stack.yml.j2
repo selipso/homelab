@@ -1,8 +1,6 @@
 x-minio-common: &minio-common
   image: bitnami/minio:2024.10.29
   user: 1001:0
-  volumes:
-    - /Volumes/tb:/bitnami/minio/data
   networks:
     - proxy
     - minio-net
@@ -25,6 +23,8 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    volumes:
+      - /Volumes/tb:/bitnami/minio/data
     deploy:
       mode: replicated
       replicas: 1
@@ -35,9 +35,8 @@ services:
   minio2:
     <<: *minio-common
     hostname: minio2
-    ports:
-      - "9002:9000"
-      - "9003:9001"
+    volumes:
+      - /Volumes/tb:/bitnami/minio/data
     deploy:
       mode: replicated
       replicas: 1
@@ -48,6 +47,8 @@ services:
   minio3:
     <<: *minio-common
     hostname: minio3
+    volumes:
+      - /Volumes/tb:/bitnami/minio/data
     deploy:
       mode: replicated
       replicas: 1
@@ -58,6 +59,8 @@ services:
   minio4:
     <<: *minio-common
     hostname: minio4
+    volumes:
+      - /Volumes/tb:/bitnami/minio/data
     deploy:
       mode: replicated
       replicas: 1

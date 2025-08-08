@@ -1,41 +1,31 @@
 ---
-- name: Deploy etcd stack to Docker Swarm
+- name: Deploy Redis stack to Docker Swarm
   hosts: int_swarm_managers[0]
+  become: true
   gather_facts: false
   tasks:
     # Set up networks for attaching services
-    - name: Ensure 'proxy' network exists and attachable
+    - name: Ensure 'redis' network exists and attachable
       community.docker.docker_network:
-        name: proxy
+        name: redis
         driver: overlay
         attachable: true
         state: present
-
-    - name: Ensure 'etcd-net' network exists and is encrypted
-      community.docker.docker_network:
-        name: etcd-net
-        driver: overlay
-        driver_options:
-          encrypted: "true"
-        attachable: true
-        state: present
-
     # Encrypted vars
     - name: Include encrypted variables
       ansible.builtin.include_vars:
         file: group_vars/secrets.yml
 
-    # Create directories for etcd data
-    - name: Ensure etcd directory exists on NFS share
-      become: true
+    # Create required directories on shared storage
+    - name: Ensure Redis data directory exists
       ansible.builtin.file:
-        path: /mnt/nfs/shared/etcd/data
+        path: /mnt/shared/redis
+        state: directory
         owner: 1001
         group: 0
-        state: directory
-        mode: "0755"
+        mode: '0755'
 
-    # Begin configuring the etcd stack
+    # Begin configuring the Redis stack
     - name: Create temporary directory for compose stack
       ansible.builtin.tempfile:
         state: directory
@@ -44,14 +34,14 @@
 
     - name: Render and copy compose file as a stack to temp dir on manager
       ansible.builtin.template:
-        src: templates/etcd-stack.yml.j2
-        dest: "{{ temp_dir_result.path }}/etcd.yml"
+        src: templates/redis-stack.yml.j2
+        dest: "{{ temp_dir_result.path }}/redis-stack.yml"
 
-    - name: Deploy etcd stack to Docker Swarm
+    - name: Deploy Redis stack to Docker Swarm
       community.docker.docker_stack:
         state: present
-        name: etcd
-        compose: "{{ temp_dir_result.path }}/etcd.yml"
+        name: redis
+        compose: "{{ temp_dir_result.path }}/redis-stack.yml"
       register: stack_deploy_result
 
     - name: Clean up temporary directory

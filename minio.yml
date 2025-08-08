@@ -2,6 +2,7 @@
 - name: Deploy Minio stack to Docker Swarm
   hosts: int_swarm_managers[0]
   gather_facts: false
+  become: true
   tasks:
     # Set up networks for attaching services
     - name: Ensure 'proxy' network exists and attachable

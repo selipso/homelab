@@ -28,7 +28,7 @@ services:
       - "9001:9001"
       - "9000:9000"
     volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+      - /Volumes/tb:/minio_data
     command: minio server /minio_data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -38,7 +38,7 @@ services:
 
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.5.14
+    image: milvusdb/milvus:v2.6.0
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
