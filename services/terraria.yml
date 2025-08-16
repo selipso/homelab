@@ -1,22 +1,15 @@
 version: "3"
 services:
   terraria:
-    hostname: terraria
+    container_name: terraria
     image: ryshe/terraria:latest
     stdin_open: true # docker run -i
     tty: true # docker run -t
     environment:
-      - WORLD_FILENAME=Terratits.wld
+      - WORLD_FILENAME=world.wld
       - CONFIGPATH=config.json
     ports:
       - 7777:7777
     volumes:
       - /mnt/volumes/terraria/world:/root/.local/share/Terraria/Worlds
     restart: unless-stopped
-    deploy:
-      replicas: 1
-    networks:
-      - proxy
-networks:
-  proxy:
-    external: true

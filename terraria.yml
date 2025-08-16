@@ -2,6 +2,7 @@
 - name: Deploy Search stack to Docker Swarm
   hosts: int_swarm_managers[0]
   gather_facts: false
+  become: true
   tasks:
     # Set up networks for attaching services
     - name: Ensure 'proxy' network exists and attachable
@@ -10,10 +11,10 @@
         driver: overlay
         attachable: true
         state: present
-    # Encrypted vars
-    - name: Include encrypted variables
-      ansible.builtin.include_vars:
-        file: group_vars/secrets.yml
+    # # Encrypted vars
+    # - name: Include encrypted variables
+    #   ansible.builtin.include_vars:
+    #     file: group_vars/secrets.yml
 
     # Begin configuring the Terraria stack
     - name: Create temporary directory for compose stack

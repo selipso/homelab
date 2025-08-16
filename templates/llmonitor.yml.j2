@@ -44,7 +44,7 @@ services:
       - DB_POSTGRESDB_PASSWORD={{ POSTGRES_PASSWORD }}
       - N8N_SECURE_COOKIE=false
     volumes:
-      - /mnt/apps/shared/n8n:/home/node/.n8n
+      - /mnt/apps/n8n:/home/node/.n8n
     depends_on:
       - llmdb
     networks:
@@ -63,7 +63,7 @@ services:
     deploy:
       replicas: 1
     volumes:
-      - /mnt/apps/shared/monitoring/data:/var/lib/postgresql/data # Persists Postgres data across container restarts
+      - /mnt/apps/monitoring/data:/var/lib/postgresql/data # Persists Postgres data across container restarts
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d litellm -U llmproxy"]
       interval: 1s
@@ -75,8 +75,8 @@ services:
       - monitoring
     image: prom/prometheus:v3.4.1
     volumes:
-      - /mnt/apps/shared/prometheus:/prometheus
-      - /mnt/apps/shared/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /mnt/apps/prometheus:/prometheus
+      - /mnt/apps/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
     command:
@@ -94,7 +94,7 @@ services:
     ports:
       - "4500:3000"
     volumes:
-      - /mnt/apps/shared/grafana:/var/lib/grafana # Persists Grafana data across container restarts
+      - /mnt/apps/grafana:/var/lib/grafana # Persists Grafana data across container restarts
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD={{ DASHBOARD_PASSWORD }}
