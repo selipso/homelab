@@ -2,6 +2,7 @@
 - name: Deploy Monitoring stack to Docker Swarm
   hosts: int_swarm_managers[0]
   gather_facts: false
+  become: true
   tasks:
     # Set up networks for attaching services
     - name: Ensure 'proxy' network exists and attachable
@@ -22,6 +23,19 @@
         file: group_vars/secrets.yml
 
     # Begin configuring the monitoring stack
+    # Create required directories with proper ownership
+    - name: Create directory structure for bind mounts
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: '0755'
+      loop:
+        - { path: "/mnt/apps/grafana", owner: "472", group: "0" }       # Grafana
+        - { path: "/mnt/apps/prometheus", owner: "1000", group: "0" }   # Prometheus data
+        - { path: "/mnt/apps/n8n", owner: "1000", group: "0" }          # n8n
+
     - name: Create temporary directory for compose stack
       ansible.builtin.tempfile:
         state: directory

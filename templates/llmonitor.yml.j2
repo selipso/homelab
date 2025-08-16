@@ -73,7 +73,8 @@ services:
   prometheus:
     networks:
       - monitoring
-    image: prom/prometheus:v3.4.1
+    image: prom/prometheus:v3.4.2
+    user: "1000:0"
     volumes:
       - /mnt/apps/prometheus:/prometheus
       - /mnt/apps/prometheus.yml:/etc/prometheus/prometheus.yml
@@ -90,7 +91,7 @@ services:
   grafana:
     networks:
       - monitoring
-    image: grafana/grafana:12.0.2
+    image: grafana/grafana:12.1.1
     ports:
       - "4500:3000"
     volumes:
