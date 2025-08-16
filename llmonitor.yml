@@ -30,11 +30,12 @@
         state: directory
         owner: "{{ item.owner }}"
         group: "{{ item.group }}"
-        mode: '0755'
+        mode: "0755"
       loop:
-        - { path: "/mnt/apps/grafana", owner: "472", group: "0" }       # Grafana
-        - { path: "/mnt/apps/prometheus", owner: "1000", group: "0" }   # Prometheus data
-        - { path: "/mnt/apps/n8n", owner: "1000", group: "0" }          # n8n
+        - { path: "/mnt/apps/grafana", owner: "472", group: "0" } # Grafana
+        - { path: "/mnt/apps/prometheus", owner: "1000", group: "0" } # Prometheus data
+        - { path: "/mnt/apps/n8n", owner: "1000", group: "0" } # n8n
+        - { path: "/mnt/apps/gitea", owner: "1000", group: "1000" } # gitea
 
     - name: Create temporary directory for compose stack
       ansible.builtin.tempfile:

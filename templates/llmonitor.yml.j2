@@ -52,6 +52,32 @@ services:
     deploy:
       replicas: 1
 
+  git:
+    image: docker.gitea.com/gitea:1.24.5
+    hostname: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=llmdb:5432
+      - GITEA__database__NAME=litellm
+      - GITEA__database__USER=llmproxy
+      - GITEA__database__PASSWD={{ POSTGRES_PASSWORD }}
+    depends_on:
+      - llmdb
+    networks:
+      - monitoring
+      - proxy
+    deploy:
+      replicas: 1
+    volumes:
+      - /mnt/apps/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "3000:3000"
+      - "222:22"
+
   llmdb:
     networks:
       - monitoring
